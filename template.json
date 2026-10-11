@@ -1,0 +1,319 @@
+{
+  "name": "Infisical v0.166 Secrets Manager",
+  "description": "Store, sync and rotate secrets for your apps and teams. Self-hosted.",
+  "category": "Other",
+  "tags": [
+    "infisical",
+    "secrets-management",
+    "vault-alternative",
+    "devops",
+    "security",
+    "postgres",
+    "redis"
+  ],
+  "image": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/infisical.svg",
+  "upstream": {
+    "repo": "Infisical/infisical",
+    "version": "v0.166.3",
+    "checked": "2026-10-11"
+  },
+  "services": {
+    "Infisical": {
+      "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/infisical.svg",
+      "source": {
+        "image": "infisical/infisical:v0.166.3"
+      },
+      "startCommand": null,
+      "preDeployCommand": "/bin/sh -c \"i=1; until npm run migration:latest; do if [ $i -ge 30 ]; then echo 'migrations failed 30 times'; exit 1; fi; i=$((i+1)); echo 'retrying migrations in 10s'; sleep 10; done\"",
+      "preDeployTimeoutSeconds": 900,
+      "healthcheckPath": "/api/status",
+      "healthcheckTimeout": 600,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10,
+      "numReplicas": 1,
+      "cronSchedule": null,
+      "publicDomain": true,
+      "targetPort": 8080,
+      "tcpProxy": null,
+      "volume": null,
+      "variables": {
+        "PORT": {
+          "defaultValue": "8080",
+          "description": "Port Infisical listens on; Railway routes traffic and healthchecks here.",
+          "required": false
+        },
+        "HOST": {
+          "defaultValue": "::",
+          "description": "Bind address. :: is dual-stack, so the bootstrap job reaches Infisical in IPv6-only private networks too.",
+          "required": false
+        },
+        "NODE_ENV": {
+          "defaultValue": "production",
+          "description": "Runtime mode.",
+          "required": false
+        },
+        "SITE_URL": {
+          "defaultValue": "https://${{RAILWAY_PUBLIC_DOMAIN}}",
+          "description": "Absolute public URL (links in e-mails, OAuth/SAML callbacks). Change it when you add a custom domain.",
+          "required": false
+        },
+        "ENCRYPTION_KEY": {
+          "defaultValue": "${{secret(32, \"0123456789abcdef\")}}",
+          "description": "Root key for platform encryption: 16 random bytes as 32 hex characters (upstream: openssl rand -hex 16). Back it up; without it stored secrets cannot be decrypted. Never change it without Infisical's key-rotation procedure.",
+          "required": false
+        },
+        "AUTH_SECRET": {
+          "defaultValue": "${{secret(44, \"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/\")}}",
+          "description": "Signs JWT sessions: 44 base64 characters (~32 bytes, upstream: openssl rand -base64 32). Changing it signs everyone out.",
+          "required": false
+        },
+        "DB_CONNECTION_URI": {
+          "defaultValue": "${{Postgres.DATABASE_URL}}",
+          "description": "Postgres connection string (private network).",
+          "required": false
+        },
+        "REDIS_URL": {
+          "defaultValue": "${{Redis.REDIS_URL}}?family=0",
+          "description": "Redis for cache and job queues. family=0 lets ioredis use IPv4 or IPv6 on the private network.",
+          "required": false
+        },
+        "TELEMETRY_ENABLED": {
+          "defaultValue": "false",
+          "description": "Anonymous usage telemetry to Infisical. Off by default in this template; set true to share it.",
+          "required": false
+        },
+        "SMTP_HOST": {
+          "defaultValue": "",
+          "description": "SMTP host for invitations, MFA codes and alerts (Infisical supports SMTP only; outbound SMTP needs Railway Pro). Optional.",
+          "required": false
+        },
+        "SMTP_PORT": {
+          "defaultValue": "587",
+          "description": "SMTP port (587 STARTTLS, 465 TLS).",
+          "required": false
+        },
+        "SMTP_USERNAME": {
+          "defaultValue": "",
+          "description": "SMTP username. Optional.",
+          "required": false
+        },
+        "SMTP_PASSWORD": {
+          "defaultValue": "",
+          "description": "SMTP password. Optional.",
+          "required": false
+        },
+        "SMTP_FROM_ADDRESS": {
+          "defaultValue": "",
+          "description": "Sender address, e.g. infisical@yourcompany.com. Optional.",
+          "required": false
+        },
+        "SMTP_FROM_NAME": {
+          "defaultValue": "Infisical",
+          "description": "Sender display name.",
+          "required": false
+        },
+        "CLIENT_ID_GOOGLE_LOGIN": {
+          "defaultValue": "",
+          "description": "Optional Google OAuth client ID for 'Continue with Google' (redirect: SITE_URL/api/v1/sso/google).",
+          "required": false
+        },
+        "CLIENT_SECRET_GOOGLE_LOGIN": {
+          "defaultValue": "",
+          "description": "Optional Google OAuth client secret.",
+          "required": false
+        },
+        "CLIENT_ID_GITHUB_LOGIN": {
+          "defaultValue": "",
+          "description": "Optional GitHub OAuth app client ID for 'Continue with GitHub' (callback: SITE_URL/api/v1/sso/github).",
+          "required": false
+        },
+        "CLIENT_SECRET_GITHUB_LOGIN": {
+          "defaultValue": "",
+          "description": "Optional GitHub OAuth app client secret.",
+          "required": false
+        }
+      }
+    },
+    "Postgres": {
+      "icon": "https://devicons.railway.app/i/postgresql.svg",
+      "source": {
+        "image": "ghcr.io/railwayapp-templates/postgres-ssl:18"
+      },
+      "startCommand": null,
+      "preDeployCommand": null,
+      "healthcheckPath": null,
+      "healthcheckTimeout": null,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10,
+      "numReplicas": 1,
+      "cronSchedule": null,
+      "publicDomain": false,
+      "targetPort": null,
+      "tcpProxy": null,
+      "volume": {
+        "mountPath": "/var/lib/postgresql/data"
+      },
+      "variables": {
+        "PGDATA": {
+          "defaultValue": "/var/lib/postgresql/data/pgdata",
+          "description": "Location where the database will be initialized.",
+          "required": false
+        },
+        "PGHOST": {
+          "defaultValue": "${{RAILWAY_PRIVATE_DOMAIN}}",
+          "description": "Railway Private Domain Name.",
+          "required": false
+        },
+        "PGPORT": {
+          "defaultValue": "5432",
+          "description": "Port to connect to Postgres.",
+          "required": false
+        },
+        "PGUSER": {
+          "defaultValue": "${{ POSTGRES_USER }}",
+          "description": "Required variable for Data panel.",
+          "required": false
+        },
+        "PGDATABASE": {
+          "defaultValue": "${{POSTGRES_DB}}",
+          "description": "Required variable for the data panel.",
+          "required": false
+        },
+        "PGPASSWORD": {
+          "defaultValue": "${{POSTGRES_PASSWORD}}",
+          "description": "Required variable for Data panel.",
+          "required": false
+        },
+        "POSTGRES_DB": {
+          "defaultValue": "railway",
+          "description": "Default database created when image is started.",
+          "required": false
+        },
+        "DATABASE_URL": {
+          "defaultValue": "postgresql://${{PGUSER}}:${{POSTGRES_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:5432/${{PGDATABASE}}",
+          "description": "URL to connect to Postgres database.",
+          "required": false
+        },
+        "POSTGRES_USER": {
+          "defaultValue": "postgres",
+          "description": "User to connect to Postgres DB.",
+          "required": false
+        },
+        "SSL_CERT_DAYS": {
+          "defaultValue": "820",
+          "description": "SSL certificate expiry in days.",
+          "required": false
+        },
+        "POSTGRES_PASSWORD": {
+          "defaultValue": "${{ secret(32, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\") }}",
+          "description": "Password to connect to DB.",
+          "required": false
+        },
+        "RAILWAY_DEPLOYMENT_DRAINING_SECONDS": {
+          "defaultValue": "60",
+          "description": "Allow Postgres to cleanly shut down.",
+          "required": false
+        }
+      }
+    },
+    "Redis": {
+      "icon": "https://cdn.sanity.io/images/sy1jschh/production/0ce0bfdcfbdbf69662b1116671f97c2dd788b655-157x157.svg",
+      "source": {
+        "image": "redis:8.2"
+      },
+      "startCommand": "/bin/sh -c \"rm -rf $RAILWAY_VOLUME_MOUNT_PATH/lost+found/ && exec docker-entrypoint.sh redis-server --requirepass $REDIS_PASSWORD --save 60 1 --dir $RAILWAY_VOLUME_MOUNT_PATH --maxmemory-policy noeviction\"",
+      "preDeployCommand": null,
+      "healthcheckPath": null,
+      "healthcheckTimeout": null,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10,
+      "numReplicas": 1,
+      "cronSchedule": null,
+      "publicDomain": false,
+      "targetPort": null,
+      "tcpProxy": null,
+      "volume": {
+        "mountPath": "/data"
+      },
+      "variables": {
+        "REDISHOST": {
+          "defaultValue": "${{RAILWAY_PRIVATE_DOMAIN}}",
+          "description": "Private network hostname of the Redis service, only resolvable from services in the same environment.",
+          "required": false
+        },
+        "REDISPORT": {
+          "defaultValue": "6379",
+          "description": "Port that Redis listens on.",
+          "required": false
+        },
+        "REDISUSER": {
+          "defaultValue": "default",
+          "description": "Username for authenticating with Redis.",
+          "required": false
+        },
+        "REDIS_URL": {
+          "defaultValue": "redis://${{ REDISUSER }}:${{ REDIS_PASSWORD }}@${{ REDISHOST }}:${{ REDISPORT }}",
+          "description": "Connection string for connecting to Redis using the private network.",
+          "required": false
+        },
+        "REDISPASSWORD": {
+          "defaultValue": "${{REDIS_PASSWORD}}",
+          "description": "Alias of REDIS_PASSWORD for clients that expect the unseparated name.",
+          "required": false
+        },
+        "REDIS_PASSWORD": {
+          "defaultValue": "${{ secret(32, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\") }}",
+          "description": "Randomly generated password for authenticating with Redis.",
+          "required": false
+        }
+      }
+    },
+    "Infisical Bootstrap": {
+      "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/infisical.svg",
+      "source": {
+        "repo": "baranberkay96/infisical-railway",
+        "rootDirectory": "/services/bootstrap"
+      },
+      "startCommand": null,
+      "preDeployCommand": null,
+      "healthcheckPath": null,
+      "healthcheckTimeout": null,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10,
+      "numReplicas": 1,
+      "cronSchedule": null,
+      "publicDomain": false,
+      "targetPort": null,
+      "tcpProxy": null,
+      "volume": null,
+      "variables": {
+        "INFISICAL_INTERNAL_URL": {
+          "defaultValue": "http://${{Infisical.RAILWAY_PRIVATE_DOMAIN}}:8080",
+          "description": "Infisical's private address.",
+          "required": false
+        },
+        "INFISICAL_ADMIN_EMAIL": {
+          "defaultValue": "",
+          "description": "E-mail of the super-admin account this job creates right after the first boot (closes the 'first visitor becomes admin' window).",
+          "required": true
+        },
+        "INFISICAL_ADMIN_PASSWORD": {
+          "defaultValue": "${{secret(32)}}",
+          "description": "Password of the super-admin (letters and digits). Read it here for the first sign-in, then change it in Infisical.",
+          "required": false
+        },
+        "INFISICAL_ORGANIZATION_NAME": {
+          "defaultValue": "My Organization",
+          "description": "Name of the first organization.",
+          "required": false
+        },
+        "BOOTSTRAP_WAIT_SECONDS": {
+          "defaultValue": "1200",
+          "description": "How long the job waits for Infisical to come up.",
+          "required": false
+        }
+      }
+    }
+  },
+  "buckets": []
+}
