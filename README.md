@@ -1,5 +1,7 @@
 # Deploy and Host Infisical with Railway
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/infisical-v0166-secrets-manager?referralCode=20H68q)
+
 Infisical is an open-source secrets manager: store environment variables, API keys and certificates per project and environment, sync them to your apps and CI/CD, and keep an audit trail of every access. This community template runs Infisical on Railway with Postgres and Redis, generated keys, and an admin account created for you.
 
 ## About Hosting Infisical
